@@ -1,113 +1,118 @@
+# dashboard/app.py
+
 import streamlit as st
 import pandas as pd
+import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-st.set_page_config(layout="wide")
 sns.set(style="whitegrid")
 
-st.title("IPL 2008-2023 EDA Dashboard")
+st.title("IPL Data Analysis Dashboard")
 
-# Load cleaned datasets
-matches = pd.read_csv("data/processed/matches_clean.csv")
-deliveries = pd.read_csv("data/processed/deliveries_clean.csv")
+# -------------------------------
+# 1️⃣ Load Data
+# -------------------------------
+matches = pd.read_csv("../data/processed/matches_clean.csv")
+deliveries = pd.read_csv("../data/processed/deliveries_clean.csv")
 
-# Merge deliveries with matches for venue info
-deliveries = deliveries.merge(
-    matches[['id', 'venue']],
-    left_on='match_id',  # ensure your deliveries has 'match_id'
-    right_on='id',
-    how='left'
-)
+# Ensure consistent column names
+matches.rename(columns={'id':'match_id', 'Season':'season'}, inplace=True)
 
-# -----------------------------
-# Top 10 Batsmen
-# -----------------------------
-st.subheader("Top 10 Batsmen by Total Runs")
+# Merge deliveries with matches to get venue and season info
+deliveries = deliveries.merge(matches[['match_id', 'venue', 'season']], on='match_id', how='left')
+
+# -------------------------------
+# 2️⃣ Top 10 Batsmen
+# -------------------------------
+st.subheader("Top 10 Batsmen (Total Runs)")
 top_batsmen = deliveries.groupby("batsman")["batsman_runs"].sum().sort_values(ascending=False).head(10)
 
 fig, ax = plt.subplots(figsize=(10,5))
-top_batsmen.plot(kind="bar", ax=ax, color='skyblue')
-ax.set_ylabel("Runs")
-st.pyplot(fig)
-
-# -----------------------------
-# Top 10 Bowlers
-# -----------------------------
-st.subheader("Top 10 Bowlers by Wickets")
-wickets = deliveries[deliveries['is_wicket'] == 1]
-top_bowlers = wickets.groupby('bowler').size().sort_values(ascending=False).head(10)
-
-fig, ax = plt.subplots(figsize=(10,5))
-top_bowlers.plot(kind="bar", ax=ax, color='salmon')
-ax.set_ylabel("Wickets")
-st.pyplot(fig)
-
-# -----------------------------
-# Dominant Team per Season
-# -----------------------------
-st.subheader("Dominant Team per Season")
-dominant_team = matches.groupby(['season','winner']).size().reset_index(name='matches_won')
-dominant_team_per_season = dominant_team.loc[dominant_team.groupby('season')['matches_won'].idxmax()]
-
-fig, ax = plt.subplots(figsize=(12,6))
-sns.barplot(x='season', y='matches_won', hue='winner', data=dominant_team_per_season, dodge=False, ax=ax)
-ax.set_ylabel("Matches Won")
-st.pyplot(fig)
-
-# -----------------------------
-# Match Outcome Pattern
-# -----------------------------
-st.subheader("Distribution of Wins by Runs")
-fig, ax = plt.subplots(figsize=(12,6))
-sns.histplot(matches['win_by_runs'], bins=30, kde=True, color='purple', ax=ax)
+sns.barplot(x=top_batsmen.values, y=top_batsmen.index, ax=ax)
 ax.set_xlabel("Runs")
+ax.set_ylabel("Batsman")
 st.pyplot(fig)
 
-st.subheader("Distribution of Wins by Wickets")
-fig, ax = plt.subplots(figsize=(12,6))
-sns.histplot(matches['win_by_wickets'], bins=30, kde=True, color='green', ax=ax)
-ax.set_xlabel("Wickets")
-st.pyplot(fig)
-
-# -----------------------------
-# Venue Analysis
-# -----------------------------
-#deliveries = deliveries.merge(matches[['match_id', 'venue']], on='match_id', how='left')
-
-#st.subheader("Top 10 Venues by Average Runs per Match")
-#deliveries['total_runs'] = deliveries['batsman_runs'] + deliveries['extra_runs']
-#venue_avg = deliveries.groupby('venue')['total_runs'].mean().sort_values(ascending=False).head(10)
-
-#fig, ax = plt.subplots(figsize=(10,5))
-#sns.barplot(x=venue_avg.values, y=venue_avg.index, ax=ax)
-#ax.set_xlabel("Average Runs")
-#ax.set_ylabel("Venue")
-#st.pyplot(fig)
-
-# -----------------------------
-# Consistent Batsmen (Batting Average)
-# -----------------------------
-st.subheader("Top 10 Consistent Batsmen (Batting Average)")
-dismissals = deliveries.groupby('batsman')['player_dismissed'].count()
-total_runs = deliveries.groupby('batsman')['batsman_runs'].sum()
-batting_average = total_runs / dismissals.replace(0, pd.NA)
-
-consistent_batsmen = batting_average.sort_values(ascending=False).head(10)
+# -------------------------------
+# 3️⃣ Top 10 Bowlers
+# -------------------------------
+st.subheader("Top 10 Bowlers (Wickets)")
+# Wickets = count of dismissals except 'run out'
+wickets = deliveries[deliveries['dismissal_kind'].notna() & (deliveries['dismissal_kind'] != 'run out')]
+top_bowlers = wickets.groupby('bowler')['dismissal_kind'].count().sort_values(ascending=False).head(10)
 
 fig, ax = plt.subplots(figsize=(10,5))
-consistent_batsmen.plot(kind='bar', ax=ax, color='orange')
-ax.set_ylabel("Batting Average")
+sns.barplot(x=top_bowlers.values, y=top_bowlers.index, ax=ax)
+ax.set_xlabel("Wickets")
+ax.set_ylabel("Bowler")
 st.pyplot(fig)
 
-# -----------------------------
-# Most Wickets in a Single Match
-# -----------------------------
-st.subheader("Most Wickets Taken in a Single Match")
-wickets_per_match = deliveries[deliveries['is_wicket'] == 1].groupby(['match_id', 'bowler']).size()
-most_wickets = wickets_per_match.sort_values(ascending=False).head(10)
+# -------------------------------
+# 4️⃣ Dominant Teams per Season (Stacked Bar)
+# -------------------------------
+st.subheader("Dominant Team per Season")
+team_season_wins = matches.groupby(['season','winner']).size().unstack(fill_value=0)
 
 fig, ax = plt.subplots(figsize=(12,6))
-most_wickets.plot(kind='bar', ax=ax, color='red')
-ax.set_ylabel("Wickets")
+team_season_wins.plot(kind='bar', stacked=True, ax=ax)
+ax.set_ylabel("Matches Won")
+ax.set_xlabel("Season")
+st.pyplot(fig)
+
+# -------------------------------
+# 5️⃣ Match Outcome Patterns
+# -------------------------------
+st.subheader("Match Outcome Patterns")
+# Wins by Runs
+fig, ax = plt.subplots(figsize=(10,5))
+sns.histplot(matches['win_by_runs'], bins=30, kde=True, ax=ax)
+ax.set_title("Distribution of Wins by Runs")
+st.pyplot(fig)
+
+# Wins by Wickets
+fig, ax = plt.subplots(figsize=(10,5))
+sns.histplot(matches['win_by_wickets'], bins=30, kde=True, ax=ax)
+ax.set_title("Distribution of Wins by Wickets")
+st.pyplot(fig)
+
+# -------------------------------
+# 6️⃣ Top 10 Venues by Average Score
+# -------------------------------
+st.subheader("Top 10 Venues by Average Score")
+deliveries['total_runs'] = deliveries['batsman_runs'] + deliveries['extra_runs']
+venue_avg = deliveries.groupby('venue')['total_runs'].mean().sort_values(ascending=False).head(10)
+
+fig, ax = plt.subplots(figsize=(10,5))
+sns.barplot(x=venue_avg.values, y=venue_avg.index, ax=ax)
+ax.set_xlabel("Average Runs")
+ax.set_ylabel("Venue")
+st.pyplot(fig)
+
+# -------------------------------
+# 7️⃣ Consistent Batsmen (Average Runs per Dismissal)
+# -------------------------------
+st.subheader("Top 10 Consistent Batsmen")
+dismissals = deliveries.groupby('batsman')['dismissal_kind'].count()
+total_runs = deliveries.groupby('batsman')['batsman_runs'].sum()
+batting_avg = total_runs / dismissals.replace(0, np.nan)
+consistent_batsmen = batting_avg.sort_values(ascending=False).head(10)
+
+fig, ax = plt.subplots(figsize=(10,5))
+sns.barplot(x=consistent_batsmen.values, y=consistent_batsmen.index, ax=ax)
+ax.set_xlabel("Batting Average")
+ax.set_ylabel("Batsman")
+st.pyplot(fig)
+
+# -------------------------------
+# 8️⃣ Most Wickets in a Single Match
+# -------------------------------
+st.subheader("Most Wickets in a Single Match")
+wickets_per_match = wickets.groupby(['match_id','bowler']).size().reset_index(name='wickets')
+most_wickets_match = wickets_per_match.sort_values('wickets', ascending=False).head(10)
+
+fig, ax = plt.subplots(figsize=(10,5))
+sns.barplot(x='wickets', y='bowler', data=most_wickets_match, ax=ax)
+ax.set_xlabel("Wickets")
+ax.set_ylabel("Bowler")
 st.pyplot(fig)
