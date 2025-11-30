@@ -19,8 +19,8 @@ deliveries = pd.read_csv("../data/processed/deliveries_clean.csv")
 # Ensure consistent column names
 matches.rename(columns={'id':'match_id', 'Season':'season'}, inplace=True)
 
-# Merge deliveries with matches to get venue and season info
-deliveries = deliveries.merge(matches[['match_id', 'venue', 'season']], on='match_id', how='left')
+# Merge deliveries with matches to get season info
+deliveries = deliveries.merge(matches[['match_id', 'season']], on='match_id', how='left')
 
 # -------------------------------
 # 2️⃣ Top 10 Batsmen
@@ -77,20 +77,7 @@ ax.set_title("Distribution of Wins by Wickets")
 st.pyplot(fig)
 
 # -------------------------------
-# 6️⃣ Top 10 Venues by Average Score
-# -------------------------------
-st.subheader("Top 10 Venues by Average Score")
-deliveries['total_runs'] = deliveries['batsman_runs'] + deliveries['extra_runs']
-venue_avg = deliveries.groupby('venue')['total_runs'].mean().sort_values(ascending=False).head(10)
-
-fig, ax = plt.subplots(figsize=(10,5))
-sns.barplot(x=venue_avg.values, y=venue_avg.index, ax=ax)
-ax.set_xlabel("Average Runs")
-ax.set_ylabel("Venue")
-st.pyplot(fig)
-
-# -------------------------------
-# 7️⃣ Consistent Batsmen (Average Runs per Dismissal)
+# 6️⃣ Consistent Batsmen (Average Runs per Dismissal)
 # -------------------------------
 st.subheader("Top 10 Consistent Batsmen")
 dismissals = deliveries.groupby('batsman')['dismissal_kind'].count()
@@ -105,7 +92,7 @@ ax.set_ylabel("Batsman")
 st.pyplot(fig)
 
 # -------------------------------
-# 8️⃣ Most Wickets in a Single Match
+# 7️⃣ Most Wickets in a Single Match
 # -------------------------------
 st.subheader("Most Wickets in a Single Match")
 wickets_per_match = wickets.groupby(['match_id','bowler']).size().reset_index(name='wickets')
