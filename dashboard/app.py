@@ -13,8 +13,8 @@ st.title("IPL Data Analysis Dashboard")
 # -------------------------------
 # 1️⃣ Load Data
 # -------------------------------
-matches = pd.read_csv("../data/processed/matches_clean.csv")
-deliveries = pd.read_csv("../data/processed/deliveries_clean.csv")
+matches = pd.read_csv("../data/matches_clean.csv")
+deliveries = pd.read_csv("../data/deliveries_clean.csv")
 
 # Ensure consistent column names
 matches.rename(columns={'id':'match_id', 'Season':'season'}, inplace=True)
