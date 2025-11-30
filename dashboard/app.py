@@ -73,17 +73,17 @@ st.pyplot(fig)
 # -----------------------------
 # Venue Analysis
 # -----------------------------
-deliveries = deliveries.merge(matches[['match_id', 'venue']], on='match_id', how='left')
+#deliveries = deliveries.merge(matches[['match_id', 'venue']], on='match_id', how='left')
 
-st.subheader("Top 10 Venues by Average Runs per Match")
-deliveries['total_runs'] = deliveries['batsman_runs'] + deliveries['extra_runs']
-venue_avg = deliveries.groupby('venue')['total_runs'].mean().sort_values(ascending=False).head(10)
+#st.subheader("Top 10 Venues by Average Runs per Match")
+#deliveries['total_runs'] = deliveries['batsman_runs'] + deliveries['extra_runs']
+#venue_avg = deliveries.groupby('venue')['total_runs'].mean().sort_values(ascending=False).head(10)
 
-fig, ax = plt.subplots(figsize=(10,5))
-sns.barplot(x=venue_avg.values, y=venue_avg.index, ax=ax)
-ax.set_xlabel("Average Runs")
-ax.set_ylabel("Venue")
-st.pyplot(fig)
+#fig, ax = plt.subplots(figsize=(10,5))
+#sns.barplot(x=venue_avg.values, y=venue_avg.index, ax=ax)
+#ax.set_xlabel("Average Runs")
+#ax.set_ylabel("Venue")
+#st.pyplot(fig)
 
 # -----------------------------
 # Consistent Batsmen (Batting Average)
